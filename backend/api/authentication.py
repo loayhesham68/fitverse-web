@@ -1,22 +1,33 @@
+import json
+import os
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 from rest_framework import authentication, exceptions
 from django.contrib.auth.models import User
 from django.conf import settings
-import os
 
-# Initialize Firebase Admin SDK once
 _firebase_initialized = False
 
 def get_firebase_app():
     global _firebase_initialized
     if not _firebase_initialized:
-        cred_path = settings.FIREBASE_CREDENTIALS_PATH
-        if os.path.exists(cred_path):
-            cred = credentials.Certificate(cred_path)
+        # First try FIREBASE_CREDENTIALS_JSON env var (Railway production)
+        creds_json = os.environ.get('FIREBASE_CREDENTIALS_JSON')
+        if creds_json:
+            try:
+                cred_dict = json.loads(creds_json)
+                cred = credentials.Certificate(cred_dict)
+            except Exception as e:
+                raise Exception(f'Failed to parse FIREBASE_CREDENTIALS_JSON: {e}')
+        # Then try file path (local development)
+        elif os.path.exists(settings.FIREBASE_CREDENTIALS_PATH):
+            cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
         else:
-            # Fall back to application default credentials (for Firebase Functions)
-            cred = credentials.ApplicationDefault()
+            raise Exception(
+                'No Firebase credentials found. Set FIREBASE_CREDENTIALS_JSON env var '
+                'or provide firebase-credentials.json file.'
+            )
+
         firebase_admin.initialize_app(cred, {
             'projectId': settings.FIREBASE_PROJECT_ID,
         })
@@ -25,10 +36,6 @@ def get_firebase_app():
 
 
 class FirebaseAuthentication(authentication.BaseAuthentication):
-    """
-    Authenticate via Firebase ID token passed as Bearer token.
-    Creates or retrieves a Django User mapped to the Firebase UID.
-    """
 
     def authenticate(self, request):
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
@@ -50,7 +57,6 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
         name = decoded_token.get('name', email.split('@')[0] if email else 'User')
         photo_url = decoded_token.get('picture', '')
 
-        # Get or create a Django user mapped to this Firebase UID
         user, created = User.objects.get_or_create(
             username=uid,
             defaults={
@@ -59,7 +65,6 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             }
         )
 
-        # Store Firebase extras on the user object for views to access
         user.firebase_uid = uid
         user.firebase_name = name
         user.firebase_photo_url = photo_url
