@@ -1,12 +1,13 @@
+import logging
 import google.generativeai as genai
 from django.conf import settings
 from .firestore_service import get_chat_history, save_chat_message
 
+logger = logging.getLogger(__name__)
 GEMINI_MODEL = 'gemini-1.5-flash'
 
 
 def _build_system_prompt(profile: dict) -> str:
-    """Build system prompt using Firestore profile field names."""
     conditions = profile.get('healthConditions', [])
     conditions_str = ', '.join(conditions) if conditions else 'None'
 
@@ -46,11 +47,23 @@ RULES:
 def send_message_to_gemini(uid: str, user_message: str, profile: dict) -> str:
     api_key = settings.GEMINI_API_KEY
     if not api_key:
-        return "Gemini API key is not configured."
+        raise Exception("GEMINI_API_KEY is not configured.")
 
-    genai.configure(api_key=api_key)
+    logger.info(f'Sending message to Gemini for uid: {uid}')
 
-    history_docs = get_chat_history(uid, limit=50)
+    try:
+        genai.configure(api_key=api_key)
+    except Exception as e:
+        logger.error(f'Gemini configure failed: {e}')
+        raise
+
+    try:
+        history_docs = get_chat_history(uid, limit=50)
+        logger.info(f'Loaded {len(history_docs)} chat history messages')
+    except Exception as e:
+        logger.error(f'Failed to load chat history: {e}')
+        history_docs = []
+
     gemini_history = []
     for msg in history_docs:
         role = msg.get('role', 'user')
@@ -58,15 +71,23 @@ def send_message_to_gemini(uid: str, user_message: str, profile: dict) -> str:
         if content:
             gemini_history.append({'role': role, 'parts': [content]})
 
-    model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
-        system_instruction=_build_system_prompt(profile),
-    )
-    chat = model.start_chat(history=gemini_history)
-    response = chat.send_message(user_message)
-    response_text = response.text
+    try:
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=_build_system_prompt(profile),
+        )
+        chat = model.start_chat(history=gemini_history)
+        response = chat.send_message(user_message)
+        response_text = response.text
+        logger.info('Gemini response received successfully')
+    except Exception as e:
+        logger.error(f'Gemini API call failed: {e}')
+        raise
 
-    save_chat_message(uid, role='user', content=user_message, source='web')
-    save_chat_message(uid, role='model', content=response_text, source='web')
+    try:
+        save_chat_message(uid, role='user', content=user_message, source='web')
+        save_chat_message(uid, role='model', content=response_text, source='web')
+    except Exception as e:
+        logger.error(f'Failed to save chat messages: {e}')
 
     return response_text
