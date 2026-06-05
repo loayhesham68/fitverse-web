@@ -22,7 +22,7 @@ def _build_system_prompt(profile: dict) -> str:
         elif bmi < 30: bmi_category = 'Overweight'
         else: bmi_category = 'Obese'
 
-    return f"""You are Coach Jax, the FitVerse AI fitness and nutrition coach. You are warm, motivating, concise, and specific.
+    return f"""You are FitVerse Coach, the FitVerse AI fitness and nutrition coach. You are warm, motivating, concise, and specific.
 
 USER PROFILE:
 - Name: {profile.get('name', 'Athlete')}

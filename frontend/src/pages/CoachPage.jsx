@@ -36,7 +36,7 @@ function ChatBubble({ msg }) {
           {msg.content}
         </div>
         <div className={`flex items-center gap-1.5 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
-          <span className="font-mono text-xs text-fitverse-muted">{isUser ? 'ATHLETE' : 'COACH JAX'}</span>
+          <span className="font-mono text-xs text-fitverse-muted">{isUser ? 'ATHLETE' : 'FITVERSE COACH'}</span>
           {ts && <span className="font-mono text-xs text-fitverse-muted">{ts}</span>}
           {msg.source && (
             <span className="font-body text-xs px-1.5 py-0.5 rounded"
@@ -130,7 +130,7 @@ export default function CoachPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-display text-lg sm:text-2xl tracking-widest text-fitverse-text">COACH JAX</h1>
+                <h1 className="font-display text-lg sm:text-2xl tracking-widest text-fitverse-text">FITVERSE COACH</h1>
                 <span className="flex items-center gap-1 font-body text-xs text-fitverse-teal">
                   <span className="w-1.5 h-1.5 rounded-full bg-fitverse-teal animate-pulse" />
                   <span className="hidden sm:inline">SYSTEM ACTIVE</span>
@@ -184,7 +184,7 @@ export default function CoachPage() {
                 <Bot size={24} style={{ color: '#00897B' }} />
               </div>
               <div>
-                <p className="font-display text-lg sm:text-xl tracking-widest text-fitverse-text">ASK COACH JAX</p>
+                <p className="font-display text-lg sm:text-xl tracking-widest text-fitverse-text">ASK FITVERSE COACH</p>
                 <p className="font-body text-sm text-fitverse-subtle mt-1">
                   Your AI fitness coach — powered by Gemini.
                 </p>
@@ -215,7 +215,7 @@ export default function CoachPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask Coach Jax..."
+              placeholder="Ask FitVerse Coach..."
               disabled={sending}
               rows={1}
               className="flex-1 bg-transparent font-body text-sm text-fitverse-text placeholder-fitverse-muted resize-none outline-none"
