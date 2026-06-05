@@ -4,7 +4,7 @@ from django.conf import settings
 from .firestore_service import get_chat_history, save_chat_message
 
 logger = logging.getLogger(__name__)
-GEMINI_MODEL = 'gemini-1.5-flash'
+GEMINI_MODEL = 'gemini-2.5-flash'
 
 
 def _build_system_prompt(profile: dict) -> str:
