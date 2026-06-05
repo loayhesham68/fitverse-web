@@ -6,8 +6,8 @@ import { verifyAuth } from '../services/api'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)           // Firebase user
-  const [profile, setProfile] = useState(null)     // Django UserProfile
+  const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -16,6 +16,8 @@ export function AuthProvider({ children }) {
       if (firebaseUser) {
         setUser(firebaseUser)
         try {
+          // Wait for token to be ready before calling backend
+          await firebaseUser.getIdToken(true)
           const res = await verifyAuth()
           setProfile(res.data.user)
         } catch (e) {
@@ -34,7 +36,6 @@ export function AuthProvider({ children }) {
     setError(null)
     try {
       await signInWithGoogle()
-      // onAuthStateChanged will handle the rest
     } catch (e) {
       setError('Google sign-in failed. Please try again.')
       throw e
