@@ -1,32 +1,32 @@
 import json
 import os
+import logging
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 from rest_framework import authentication, exceptions
 from django.contrib.auth.models import User
 from django.conf import settings
 
+logger = logging.getLogger(__name__)
+
 _firebase_initialized = False
 
 def get_firebase_app():
     global _firebase_initialized
     if not _firebase_initialized:
-        # First try FIREBASE_CREDENTIALS_JSON env var (Railway production)
         creds_json = os.environ.get('FIREBASE_CREDENTIALS_JSON')
         if creds_json:
             try:
                 cred_dict = json.loads(creds_json)
                 cred = credentials.Certificate(cred_dict)
+                logger.info(f'Firebase initialized from env var, project: {cred_dict.get("project_id")}')
             except Exception as e:
                 raise Exception(f'Failed to parse FIREBASE_CREDENTIALS_JSON: {e}')
-        # Then try file path (local development)
         elif os.path.exists(settings.FIREBASE_CREDENTIALS_PATH):
             cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+            logger.info('Firebase initialized from file')
         else:
-            raise Exception(
-                'No Firebase credentials found. Set FIREBASE_CREDENTIALS_JSON env var '
-                'or provide firebase-credentials.json file.'
-            )
+            raise Exception('No Firebase credentials found.')
 
         firebase_admin.initialize_app(cred, {
             'projectId': settings.FIREBASE_PROJECT_ID,
@@ -50,6 +50,7 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
             get_firebase_app()
             decoded_token = firebase_auth.verify_id_token(id_token)
         except Exception as e:
+            logger.error(f'Firebase token verification failed: {str(e)}')
             raise exceptions.AuthenticationFailed(f'Invalid Firebase token: {str(e)}')
 
         uid = decoded_token.get('uid')
@@ -74,3 +75,4 @@ class FirebaseAuthentication(authentication.BaseAuthentication):
 
     def authenticate_header(self, request):
         return 'Bearer'
+    
