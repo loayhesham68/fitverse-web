@@ -17,7 +17,12 @@ def get_firebase_app():
         creds_json = os.environ.get('FIREBASE_CREDENTIALS_JSON')
         if creds_json:
             try:
-                cred_dict = json.loads(creds_json)
+                # Strip any whitespace/newlines that Railway might add
+                creds_json = creds_json.strip()
+                # If pasted twice, take only the first valid JSON object
+                # Find the end of the first JSON object
+                decoder = json.JSONDecoder()
+                cred_dict, _ = decoder.raw_decode(creds_json)
                 cred = credentials.Certificate(cred_dict)
                 logger.info(f'Firebase initialized from env var, project: {cred_dict.get("project_id")}')
             except Exception as e:
