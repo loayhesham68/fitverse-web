@@ -24,7 +24,7 @@ export default function Sidebar() {
 
         {/* Logo */}
         <div className="mb-8">
-          <img src="/logo.jpg" alt="FitVerse" className="w-10 h-10 rounded-xl object-cover" />
+          <img src="/logo.png" alt="FitVerse" className="w-10 h-10 rounded-xl object-cover" />
         </div>
 
         {/* Nav links */}
