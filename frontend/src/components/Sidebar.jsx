@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { LayoutDashboard, Bot, LogOut, Dumbbell } from 'lucide-react'
+import { LayoutDashboard, Bot, LogOut } from 'lucide-react'
 
 export default function Sidebar() {
   const { logout, user, profile } = useAuth()
@@ -18,16 +18,13 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* ── Desktop/Tablet sidebar (left, vertical) ── */}
+      {/* Desktop/Tablet sidebar */}
       <aside className="hidden sm:flex fixed left-0 top-0 h-screen w-16 flex-col items-center py-6 z-50"
         style={{ background: 'linear-gradient(180deg, #0a1a1c 0%, #0F1C1E 100%)', borderRight: '1px solid #1E3538' }}>
 
         {/* Logo */}
         <div className="mb-8">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
-            <Dumbbell size={20} color="white" />
-          </div>
+          <img src="/logo.jpg" alt="FitVerse" className="w-10 h-10 rounded-xl object-cover" />
         </div>
 
         {/* Nav links */}
@@ -68,7 +65,7 @@ export default function Sidebar() {
         </button>
       </aside>
 
-      {/* ── Mobile bottom nav ── */}
+      {/* Mobile bottom nav */}
       <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-4 py-3"
         style={{ background: '#0a1a1c', borderTop: '1px solid #1E3538' }}>
         {navItems.map(({ to, icon: Icon, label }) => (
