@@ -20,7 +20,7 @@ export default function DownloadButton() {
           </button>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0">
-              <img src="/logo.svg" alt="FitVerse" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="FitVerse" className="w-full h-full object-cover" />
             </div>
             <div>
               <p className="font-display text-sm tracking-widest text-fitverse-text">FITVERSE</p>
