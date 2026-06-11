@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bot, Send, Mic, Trash2, Wifi, WifiOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import Sidebar from '../components/Sidebar'
+import { useTyping } from '../context/TypingContext'
 import Header from '../components/Header'
 import { getChatHistory, sendChatMessage, clearChat } from '../services/api'
 
@@ -58,6 +59,7 @@ export default function CoachPage() {
   const [online, setOnline] = useState(true)
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
+  const { setIsTyping } = useTyping()
 
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 
@@ -80,6 +82,7 @@ export default function CoachPage() {
     const msg = text || input.trim()
     if (!msg || sending) return
     setInput('')
+    setIsTyping(false)
     setSending(true)
 
     const tempUser = { id: `u-${Date.now()}`, role: 'user', content: msg, source: 'web', timestamp: new Date().toISOString() }
@@ -213,7 +216,7 @@ export default function CoachPage() {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { setInput(e.target.value); setIsTyping(e.target.value.length > 0) }}
               onKeyDown={handleKeyDown}
               placeholder="Ask FitVerse Coach..."
               disabled={sending}
