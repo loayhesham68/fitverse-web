@@ -4,7 +4,7 @@ Firestore service — reads from the actual mobile app structure:
   users/{uid}                        → profile document
   users/{uid}/sessions/{sessionId}   → workout sessions
   users/{uid}/health_daily/{date}    → daily health data
-  chat_messages/{uid}/messages/{id}  → web chat history
+  users/{uid}/chat_messages/{id}     → AI coach chat history (shared mobile + web)
 """
 from firebase_admin import firestore
 from datetime import datetime, timezone, date, timedelta
@@ -119,11 +119,17 @@ def get_user_sessions(uid: str, limit: int = 10) -> list:
 # ─────────────────────────────────────────────
 
 def get_chat_history(uid: str, limit: int = 100) -> list:
+    """
+    Reads from users/{uid}/chat_messages — the same Firestore subcollection
+    the mobile app writes to directly. Mobile schema uses 'isUser' (bool)
+    and ISO-string timestamps; we translate to the 'role' shape the Gemini
+    pipeline and web UI expect.
+    """
     db = get_db()
     docs = (
-        db.collection('chat_messages')
+        db.collection('users')
         .document(uid)
-        .collection('messages')
+        .collection('chat_messages')
         .order_by('timestamp', direction=firestore.Query.ASCENDING)
         .limit(limit)
         .stream()
@@ -131,33 +137,47 @@ def get_chat_history(uid: str, limit: int = 100) -> list:
     result = []
     for doc in docs:
         data = doc.to_dict()
-        data['id'] = doc.id
+        is_user = data.get('isUser')
+        role = 'user' if is_user else 'model'
         ts = data.get('timestamp')
         if hasattr(ts, 'isoformat'):
-            data['timestamp'] = ts.isoformat()
+            ts = ts.isoformat()
         elif hasattr(ts, '_seconds'):
-            data['timestamp'] = datetime.fromtimestamp(ts._seconds, tz=timezone.utc).isoformat()
-        result.append(data)
+            ts = datetime.fromtimestamp(ts._seconds, tz=timezone.utc).isoformat()
+        # else: already an ISO string from mobile — leave as-is
+
+        result.append({
+            'id': doc.id,
+            'role': role,
+            'content': data.get('content', ''),
+            'source': data.get('source', 'mobile'),
+            'timestamp': ts,
+        })
     return result
 
 
 def save_chat_message(uid: str, role: str, content: str, source: str = 'web') -> dict:
+    """
+    Writes to users/{uid}/chat_messages using the mobile schema (isUser bool,
+    ISO timestamp string) so the mobile app's local/Firestore merge picks up
+    web-originated messages on its next load/refresh.
+    """
     db = get_db()
     msg_id = str(uuid.uuid4())
     now = datetime.now(tz=timezone.utc)
     data = {
-        'role': role,
+        'id': msg_id,
         'content': content,
+        'isUser': role == 'user',
+        'timestamp': now.isoformat(),
         'source': source,
-        'timestamp': now,
     }
-    db.collection('chat_messages').document(uid).collection('messages').document(msg_id).set(data)
-    return {'id': msg_id, **data, 'timestamp': now.isoformat()}
+    db.collection('users').document(uid).collection('chat_messages').document(msg_id).set(data)
+    return {'id': msg_id, 'role': role, 'content': content, 'source': source, 'timestamp': data['timestamp']}
 
 
 def clear_chat_history(uid: str):
     db = get_db()
-    col_ref = db.collection('chat_messages').document(uid).collection('messages')
+    col_ref = db.collection('users').document(uid).collection('chat_messages')
     for doc in col_ref.stream():
         doc.reference.delete()
-        
