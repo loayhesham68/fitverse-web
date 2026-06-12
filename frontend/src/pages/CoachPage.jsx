@@ -3,6 +3,7 @@ import { Bot, Send, Mic, Trash2, Wifi, WifiOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
+import { useTyping } from '../context/TypingContext'
 import { getChatHistory, sendChatMessage, clearChat } from '../services/api'
 
 const QUICK_PROMPTS = [
@@ -59,6 +60,7 @@ export default function CoachPage() {
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const sendingRef = useRef(false)
+  const { setIsTyping } = useTyping()
 
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 
@@ -119,6 +121,7 @@ export default function CoachPage() {
     const msg = text || input.trim()
     if (!msg || sending) return
     setInput('')
+    setIsTyping(false)
     setSending(true)
     sendingRef.current = true
 
@@ -129,8 +132,6 @@ export default function CoachPage() {
     try {
       await sendChatMessage(msg)
       setOnline(true)
-      // Re-fetch so both bubbles get their real Firestore ids/timestamps
-      // and any messages sent from mobile in the meantime are picked up too.
       await loadHistory()
     } catch (e) {
       setMessages((prev) => [...prev.slice(0, -1), { id: `e-${Date.now()}`, role: 'model', content: 'Sorry, I had trouble connecting. Please try again.', source: 'web', timestamp: new Date().toISOString() }])
@@ -256,7 +257,7 @@ export default function CoachPage() {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { setInput(e.target.value); setIsTyping(e.target.value.length > 0) }}
               onKeyDown={handleKeyDown}
               placeholder="Ask FitVerse Coach..."
               disabled={sending}

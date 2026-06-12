@@ -27,21 +27,13 @@ export default function LoginPage() {
       </div>
 
       {/* Top bar */}
-      <nav className="relative z-10 flex items-center justify-between px-5 sm:px-10 py-4 sm:py-6">
+      <nav className="relative z-10 flex items-center justify-center px-5 sm:px-10 py-4 sm:py-6">
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M6.5 6.5h11M6.5 12h11M6.5 17.5h11" />
-            </svg>
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden flex-shrink-0">
+            <img src="/logo.png" alt="FitVerse" className="w-full h-full object-cover" />
           </div>
           <span className="font-display text-xl sm:text-2xl tracking-widest text-fitverse-text">FITVERSE</span>
         </div>
-        <button onClick={handleLogin}
-          className="font-body text-xs sm:text-sm font-semibold px-3 sm:px-5 py-2 rounded-lg border tracking-widest uppercase transition-all duration-200 hover:bg-fitverse-teal hover:border-fitverse-teal hover:text-white"
-          style={{ borderColor: '#00897B', color: '#26C6DA' }}>
-          JOIN NOW
-        </button>
       </nav>
 
       {/* Main content */}
