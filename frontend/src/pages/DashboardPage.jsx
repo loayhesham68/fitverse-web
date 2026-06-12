@@ -4,9 +4,13 @@ import Sidebar from '../components/Sidebar'
 import Header from '../components/Header'
 import MetricCard from '../components/MetricCard'
 import StepsCalendar from '../components/StepsCalendar'
-import { useRealtimeDashboard } from '../hooks/useRealtimeDashboard'
 import { getDashboard, getSteps30Days } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+
+// Poll the dashboard + steps endpoints on this interval (ms).
+// The backend doesn't push live updates via WebSocket, so we refresh
+// periodically to pick up new health data synced from the mobile app.
+const REFRESH_INTERVAL = 15000
 
 export default function DashboardPage() {
   const { profile } = useAuth()
@@ -26,21 +30,25 @@ export default function DashboardPage() {
     }
   }, [])
 
+  // Initial load
   useEffect(() => { fetchData() }, [fetchData])
 
-  const handleRealtimeUpdate = useCallback((data) => {
-    if (data.event === 'steps_updated') {
-      const { date, steps, calories } = data
-      setStepsData((prev) => {
-        const idx = prev.findIndex((d) => d.date === date)
-        if (idx >= 0) { const next = [...prev]; next[idx] = { ...next[idx], steps, calories }; return next }
-        return [...prev, { date, steps, calories }]
-      })
-      setSummary((prev) => prev ? { ...prev, today: { ...prev.today, steps, calories } } : prev)
-    }
-  }, [])
+  // Periodic refresh
+  useEffect(() => {
+    const interval = setInterval(fetchData, REFRESH_INTERVAL)
+    return () => clearInterval(interval)
+  }, [fetchData])
 
-  useRealtimeDashboard(handleRealtimeUpdate)
+  // Refresh immediately when the tab regains focus/visibility
+  useEffect(() => {
+    const onFocus = () => fetchData()
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [fetchData])
 
   const today = summary?.today
   const p = summary?.profile || profile
@@ -69,14 +77,14 @@ export default function DashboardPage() {
           {/* Metric cards — 2 cols mobile, 4 cols tablet+ */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <MetricCard
-              label="Blood Oxygen" value={p?.bmi ? '98.2' : '—'} unit="%"
+              label="Blood Oxygen" value={today?.spo2 ? today.spo2.toFixed(1) : '—'} unit={today?.spo2 ? '%' : ''}
               icon={Droplets} accentColor="#26C6DA"
-              sub={{ label: 'Optimal', percent: 98 }}
+              sub={today?.spo2 ? { label: 'Optimal', percent: Math.min(100, Math.round(today.spo2)) } : { label: 'No data yet', percent: 0 }}
             />
             <MetricCard
-              label="Heart Rate" value={today?.heart_rate || '72'} unit="bpm"
-              icon={Heart} accentColor="#EF5350" pulse
-              sub={{ label: 'Resting', percent: 72 }}
+              label="Heart Rate" value={today?.heart_rate ? Math.round(today.heart_rate) : '—'} unit={today?.heart_rate ? 'bpm' : ''}
+              icon={Heart} accentColor="#EF5350" pulse={!!today?.heart_rate}
+              sub={today?.heart_rate ? { label: 'Resting', percent: Math.min(100, Math.round(today.heart_rate)) } : { label: 'No data yet', percent: 0 }}
             />
             <MetricCard
               label="Steps Today" value={(today?.steps ?? 0).toLocaleString()} unit="steps"
