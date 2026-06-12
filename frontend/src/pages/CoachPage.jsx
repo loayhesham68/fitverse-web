@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bot, Send, Mic, Trash2, Wifi, WifiOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import Sidebar from '../components/Sidebar'
-import { useTyping } from '../context/TypingContext'
 import Header from '../components/Header'
 import { getChatHistory, sendChatMessage, clearChat } from '../services/api'
 
@@ -59,7 +58,7 @@ export default function CoachPage() {
   const [online, setOnline] = useState(true)
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
-  const { setIsTyping } = useTyping()
+  const sendingRef = useRef(false)
 
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 
@@ -75,29 +74,70 @@ export default function CoachPage() {
     }
   }, [])
 
+  // Lightweight poll — merges in any new messages (e.g. sent from the mobile
+  // app) without disturbing an in-flight send or the optimistic bubbles.
+  const pollHistory = useCallback(async () => {
+    if (sendingRef.current) return
+    try {
+      const res = await getChatHistory()
+      const fresh = res.data.messages || []
+      setMessages((prev) => {
+        if (prev.some((m) => m._loading)) return prev
+        if (fresh.length === prev.length) {
+          const sameLast = fresh.length === 0 || fresh[fresh.length - 1].id === prev[prev.length - 1]?.id
+          if (sameLast) return prev
+        }
+        return fresh
+      })
+      setOnline(true)
+    } catch (e) {
+      setOnline(false)
+    }
+  }, [])
+
   useEffect(() => { loadHistory() }, [loadHistory])
   useEffect(() => { scrollToBottom() }, [messages])
+
+  // Poll every 4 seconds for messages sent from the mobile app.
+  useEffect(() => {
+    const interval = setInterval(pollHistory, 4000)
+    return () => clearInterval(interval)
+  }, [pollHistory])
+
+  // Also re-sync the moment the tab regains focus/visibility.
+  useEffect(() => {
+    const onFocus = () => pollHistory()
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [pollHistory])
 
   const sendMessage = async (text) => {
     const msg = text || input.trim()
     if (!msg || sending) return
     setInput('')
-    setIsTyping(false)
     setSending(true)
+    sendingRef.current = true
 
     const tempUser = { id: `u-${Date.now()}`, role: 'user', content: msg, source: 'web', timestamp: new Date().toISOString() }
     const tempLoading = { id: `l-${Date.now()}`, role: 'model', content: '...', source: 'web', timestamp: new Date().toISOString(), _loading: true }
     setMessages((prev) => [...prev, tempUser, tempLoading])
 
     try {
-      const res = await sendChatMessage(msg)
-      setMessages((prev) => [...prev.slice(0, -1), { id: `a-${Date.now()}`, role: 'model', content: res.data.response, source: 'web', timestamp: new Date().toISOString() }])
+      await sendChatMessage(msg)
       setOnline(true)
+      // Re-fetch so both bubbles get their real Firestore ids/timestamps
+      // and any messages sent from mobile in the meantime are picked up too.
+      await loadHistory()
     } catch (e) {
       setMessages((prev) => [...prev.slice(0, -1), { id: `e-${Date.now()}`, role: 'model', content: 'Sorry, I had trouble connecting. Please try again.', source: 'web', timestamp: new Date().toISOString() }])
       setOnline(false)
     } finally {
       setSending(false)
+      sendingRef.current = false
       inputRef.current?.focus()
     }
   }
@@ -216,7 +256,7 @@ export default function CoachPage() {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => { setInput(e.target.value); setIsTyping(e.target.value.length > 0) }}
+              onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask FitVerse Coach..."
               disabled={sending}
