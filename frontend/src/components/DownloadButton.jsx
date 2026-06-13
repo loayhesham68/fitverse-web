@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Smartphone } from 'lucide-react'
 import { useTyping } from '../context/TypingContext'
 
-// Hosted directly in frontend/public/ — same-origin static file.
-// No GitHub, no backend proxy, no CORS, works identically everywhere.
-const APK_DOWNLOAD_URL = '/FitVerse-1.0.0.apk'
+// Streamed through our Django backend from a private GitHub release.
+// The browser only ever talks to our Railway domain — no GitHub URL
+// or redirect is ever visible to the user.
+const API_BASE = import.meta.env.VITE_API_URL || ''
+const APK_DOWNLOAD_URL = `${API_BASE}/api/download-apk/`
 
 export default function DownloadButton() {
   const [showTooltip, setShowTooltip] = useState(false)

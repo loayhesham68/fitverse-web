@@ -1,6 +1,10 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from rest_framework import status
+from django.http import StreamingHttpResponse
+from django.conf import settings
+import requests
 
 from .firestore_service import (
     get_user_profile,
@@ -168,4 +172,85 @@ class MobileChatSyncView(APIView):
         uid = get_uid(request.user)
         msg = save_chat_message(uid, role=role, content=content, source='mobile')
         return Response({'ok': True, 'id': msg['id']})
+
+
+GITHUB_OWNER = 'loayhesham68'
+GITHUB_REPO = 'fitverse-web'
+GITHUB_RELEASE_TAG = 'v1.0.0'
+GITHUB_ASSET_NAME = 'FitVerse-1.0.0.apk'
+
+
+class DownloadApkView(APIView):
+    """
+    GET /api/download-apk/
+
+    Streams the APK from a PRIVATE GitHub release through our backend
+    using the GitHub API + a personal access token (GITHUB_TOKEN env var,
+    needs 'repo' scope / read access to the private repo's releases).
+
+    Flow:
+      1. GET /repos/{owner}/{repo}/releases/tags/{tag}  -> find the asset id
+      2. GET /repos/{owner}/{repo}/releases/assets/{id} with
+         Accept: application/octet-stream -> 302 to a signed download URL
+         (requests follows this automatically with allow_redirects=True)
+      3. Stream the bytes to the browser with Content-Disposition: attachment
+
+    The browser only ever talks to our domain — no GitHub URL or redirect
+    is ever visible to the user.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+
+        token = getattr(settings, 'GITHUB_TOKEN', None) or __import__('os').environ.get('GITHUB_TOKEN')
+        if not token:
+            return Response({'error': 'Server is not configured with a GITHUB_TOKEN.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        api_headers = {
+            'Authorization': f'Bearer {token}',
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'User-Agent': 'FitVerseBackend/1.0',
+        }
+
+        try:
+            # 1. Find the asset id for this release tag
+            release_url = f'https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/tags/{GITHUB_RELEASE_TAG}'
+            release_resp = requests.get(release_url, headers=api_headers, timeout=30)
+            release_resp.raise_for_status()
+            release_data = release_resp.json()
+
+            asset = next(
+                (a for a in release_data.get('assets', []) if a.get('name') == GITHUB_ASSET_NAME),
+                None,
+            )
+            if not asset:
+                logger.error(f"APK asset '{GITHUB_ASSET_NAME}' not found in release '{GITHUB_RELEASE_TAG}'")
+                return Response({'error': 'APK asset not found in the release.'}, status=status.HTTP_404_NOT_FOUND)
+
+            asset_id = asset['id']
+
+            # 2. Download the actual binary via the asset endpoint
+            asset_url = f'https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/assets/{asset_id}'
+            download_headers = {**api_headers, 'Accept': 'application/octet-stream'}
+            upstream = requests.get(asset_url, headers=download_headers, stream=True, timeout=120, allow_redirects=True)
+            upstream.raise_for_status()
+        except requests.RequestException as e:
+            logger.error(f"APK proxy failed: {type(e).__name__}: {e}")
+            return Response(
+                {'error': 'Could not fetch APK from release server.', 'detail': str(e)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        response = StreamingHttpResponse(
+            upstream.iter_content(chunk_size=8192),
+            content_type='application/vnd.android.package-archive',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{GITHUB_ASSET_NAME}"'
+        content_length = upstream.headers.get('Content-Length')
+        if content_length:
+            response['Content-Length'] = content_length
+        return response
     
