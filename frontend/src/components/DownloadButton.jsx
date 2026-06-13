@@ -1,34 +1,15 @@
 import { useState } from 'react'
-import { Download, X, Smartphone, Loader } from 'lucide-react'
+import { Smartphone } from 'lucide-react'
 import { useTyping } from '../context/TypingContext'
+
+// Same-origin (via our Railway backend) proxy — avoids the GitHub
+// redirect / CORS issues that broke downloads on mobile and TV browsers.
+const API_BASE = import.meta.env.VITE_API_URL || ''
+const APK_DOWNLOAD_URL = `${API_BASE}/api/download-apk/`
 
 export default function DownloadButton() {
   const [showTooltip, setShowTooltip] = useState(false)
-  const [downloading, setDownloading] = useState(false)
   const { isTyping } = useTyping()
-
-  const APK_URL = 'https://github.com/loayhesham68/fitverse-web/releases/download/v1.0.0/FitVerse-1.0.0.apk'
-
-  const handleDownload = async () => {
-    setDownloading(true)
-    setShowTooltip(false)
-    try {
-      const response = await fetch(APK_URL)
-      const blob = await response.blob()
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = 'FitVerse-1.0.0.apk'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
-    } catch (err) {
-      window.location.href = APK_URL
-    } finally {
-      setDownloading(false)
-    }
-  }
 
   return (
     <div
@@ -46,7 +27,7 @@ export default function DownloadButton() {
           <button
             onClick={() => setShowTooltip(false)}
             className="absolute top-3 right-3 text-fitverse-muted hover:text-fitverse-subtle">
-            <X size={14} />
+            ✕
           </button>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0">
@@ -60,14 +41,16 @@ export default function DownloadButton() {
           <p className="font-body text-xs text-fitverse-muted mb-3">
             Requires Android with Health Connect support.
           </p>
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-body text-sm font-semibold tracking-wider text-white transition-all duration-200 active:scale-95 disabled:opacity-60"
+          {/* Plain same-origin <a download> — browser handles the file
+              save natively on desktop, mobile, and TV browsers alike. */}
+          <a
+            href={APK_DOWNLOAD_URL}
+            download="FitVerse-1.0.0.apk"
+            onClick={() => setShowTooltip(false)}
+            className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-body text-sm font-semibold tracking-wider text-white transition-all duration-200 active:scale-95"
             style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
-            {downloading ? <Loader size={15} className="animate-spin" /> : <Download size={15} />}
-            {downloading ? 'DOWNLOADING...' : 'DOWNLOAD APK'}
-          </button>
+            DOWNLOAD APK
+          </a>
         </div>
       )}
 

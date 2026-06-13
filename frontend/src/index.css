@@ -40,3 +40,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (min-width: 1920px) {
   main { max-width: 1800px; margin: 0 auto; }
 }
+
+/* Hide scrollbar for horizontally-scrollable rows (e.g. quick prompts on mobile) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

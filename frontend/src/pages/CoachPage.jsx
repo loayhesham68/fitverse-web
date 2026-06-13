@@ -2,15 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Bot, Send, Mic, Trash2, Wifi, WifiOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import Sidebar from '../components/Sidebar'
-import Header from '../components/Header'
-import { useTyping } from '../context/TypingContext'
 import { getChatHistory, sendChatMessage, clearChat } from '../services/api'
+import { useTyping } from '../context/TypingContext'
 
 const QUICK_PROMPTS = [
-  '📊 Analyse my recent workout history',
+  '📊 Analyse my workout history',
   '💪 What should I eat after training?',
   '🔄 Suggest a recovery plan',
-  '🎯 How can I reach my fitness goal faster?',
+  '🎯 Reach my goal faster',
 ]
 
 function ChatBubble({ msg }) {
@@ -25,7 +24,7 @@ function ChatBubble({ msg }) {
           <Bot size={12} color="white" />
         </div>
       )}
-      <div className="max-w-[80%] sm:max-w-[65%]">
+      <div className="max-w-[85%] sm:max-w-[65%]">
         <div className="px-3 sm:px-4 py-2 sm:py-3 rounded-2xl font-body text-sm leading-relaxed"
           style={{
             background: isUser ? '#1E3538' : '#1A2E31',
@@ -37,10 +36,10 @@ function ChatBubble({ msg }) {
           {msg.content}
         </div>
         <div className={`flex items-center gap-1.5 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
-          <span className="font-mono text-xs text-fitverse-muted">{isUser ? 'ATHLETE' : 'FITVERSE COACH'}</span>
-          {ts && <span className="font-mono text-xs text-fitverse-muted">{ts}</span>}
+          <span className="font-mono text-[10px] sm:text-xs text-fitverse-muted">{isUser ? 'ATHLETE' : 'COACH'}</span>
+          {ts && <span className="font-mono text-[10px] sm:text-xs text-fitverse-muted">{ts}</span>}
           {msg.source && (
-            <span className="font-body text-xs px-1.5 py-0.5 rounded"
+            <span className="hidden sm:inline font-body text-xs px-1.5 py-0.5 rounded"
               style={{ background: msg.source === 'web' ? '#00897B22' : '#26C6DA22', color: msg.source === 'web' ? '#00897B' : '#26C6DA' }}>
               {msg.source}
             </span>
@@ -166,18 +165,18 @@ export default function CoachPage() {
 
       <main className="flex-1 sm:pl-16 pb-16 sm:pb-0 flex flex-col" style={{ height: '100dvh' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-8 py-3 sm:py-4 border-b border-fitverse-card2 flex-shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2 px-3 sm:px-8 py-2.5 sm:py-4 border-b border-fitverse-card2 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
               <Bot size={14} color="white" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-lg sm:text-2xl tracking-widest text-fitverse-text">FITVERSE COACH</h1>
-                <span className="flex items-center gap-1 font-body text-xs text-fitverse-teal">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-display text-base sm:text-2xl tracking-widest text-fitverse-text truncate">FITVERSE COACH</h1>
+                <span className="hidden sm:flex items-center gap-1 font-body text-xs text-fitverse-teal flex-shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-fitverse-teal animate-pulse" />
-                  <span className="hidden sm:inline">SYSTEM ACTIVE</span>
+                  SYSTEM ACTIVE
                 </span>
               </div>
               <p className="hidden sm:block font-body text-xs text-fitverse-subtle tracking-wider">
@@ -185,26 +184,26 @@ export default function CoachPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex items-center gap-1.5 font-body text-xs text-fitverse-subtle">
-              {online ? <><Wifi size={12} className="text-fitverse-teal" /> Synced</> : <><WifiOff size={12} className="text-red-400" /><span className="text-red-400">Offline</span></>}
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1.5 font-body text-xs text-fitverse-subtle">
+              {online
+                ? <Wifi size={14} className="text-fitverse-teal" />
+                : <WifiOff size={14} className="text-red-400" />}
+              <span className={`hidden sm:inline ${online ? '' : 'text-red-400'}`}>{online ? 'Synced' : 'Offline'}</span>
             </div>
             <button onClick={handleClear}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-fitverse-muted hover:text-red-400 hover:bg-red-400/10 transition-all">
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-fitverse-muted hover:text-red-400 hover:bg-red-400/10 transition-all flex-shrink-0">
               <Trash2 size={14} />
             </button>
-            <div className="hidden sm:block">
-              <Header title="" subtitle="" />
-            </div>
           </div>
         </div>
 
         {/* Quick prompts */}
         {messages.length === 0 && !loading && (
-          <div className="px-4 sm:px-8 py-3 flex gap-2 flex-wrap border-b border-fitverse-card2 flex-shrink-0">
+          <div className="px-3 sm:px-8 py-2.5 sm:py-3 flex gap-2 overflow-x-auto sm:flex-wrap border-b border-fitverse-card2 flex-shrink-0 no-scrollbar">
             {QUICK_PROMPTS.map((p) => (
               <button key={p} onClick={() => sendMessage(p)}
-                className="font-body text-xs px-3 sm:px-4 py-2 rounded-full transition-all duration-200 hover:border-fitverse-teal hover:text-fitverse-accent"
+                className="font-body text-xs px-3 sm:px-4 py-2 rounded-full transition-all duration-200 hover:border-fitverse-teal hover:text-fitverse-accent whitespace-nowrap flex-shrink-0"
                 style={{ background: '#1A2E31', border: '1px solid #1E3538', color: '#8AACB0' }}>
                 {p}
               </button>
@@ -213,7 +212,7 @@ export default function CoachPage() {
         )}
 
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6">
+        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-3 sm:py-6">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3">
@@ -222,7 +221,7 @@ export default function CoachPage() {
               </div>
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-4">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg, #00897B22, #26C6DA22)', border: '1px solid #00897B44' }}>
                 <Bot size={24} style={{ color: '#00897B' }} />
@@ -251,8 +250,8 @@ export default function CoachPage() {
         </div>
 
         {/* Input bar */}
-        <div className="px-4 sm:px-8 py-3 sm:py-5 border-t border-fitverse-card2 flex-shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3 rounded-2xl px-3 sm:px-5 py-2 sm:py-3"
+        <div className="px-2.5 sm:px-8 py-2.5 sm:py-5 border-t border-fitverse-card2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 rounded-2xl px-2.5 sm:px-5 py-1.5 sm:py-3"
             style={{ background: '#1A2E31', border: '1px solid #1E3538' }}>
             <textarea
               ref={inputRef}
@@ -262,7 +261,7 @@ export default function CoachPage() {
               placeholder="Ask FitVerse Coach..."
               disabled={sending}
               rows={1}
-              className="flex-1 bg-transparent font-body text-sm text-fitverse-text placeholder-fitverse-muted resize-none outline-none"
+              className="flex-1 bg-transparent font-body text-sm text-fitverse-text placeholder-fitverse-muted resize-none outline-none py-1"
               style={{ maxHeight: '100px' }}
             />
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -270,7 +269,7 @@ export default function CoachPage() {
                 <Mic size={15} />
               </button>
               <button onClick={() => sendMessage()} disabled={!input.trim() || sending}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 disabled:opacity-40 active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
                 <Send size={14} color="white" />
               </button>

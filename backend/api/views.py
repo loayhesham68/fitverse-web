@@ -1,6 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 from rest_framework import status
+from django.http import StreamingHttpResponse
+import requests
 
 from .firestore_service import (
     get_user_profile,
@@ -168,3 +171,38 @@ class MobileChatSyncView(APIView):
         uid = get_uid(request.user)
         msg = save_chat_message(uid, role=role, content=content, source='mobile')
         return Response({'ok': True, 'id': msg['id']})
+
+
+APK_RELEASE_URL = 'https://github.com/loayhesham68/fitverse-web/releases/download/v1.0.0/FitVerse-1.0.0.apk'
+APK_FILENAME = 'FitVerse-1.0.0.apk'
+
+
+class DownloadApkView(APIView):
+    """
+    GET /api/download-apk/
+
+    Streams the APK from GitHub through our own backend so the browser
+    only ever talks to our domain. This avoids the GitHub redirect /
+    CORS issues that break downloads on mobile browsers and smart TVs:
+    the browser does a normal same-origin navigation and gets a file
+    with Content-Disposition: attachment, so it downloads instead of
+    navigating away.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            upstream = requests.get(APK_RELEASE_URL, stream=True, timeout=30, allow_redirects=True)
+            upstream.raise_for_status()
+        except requests.RequestException:
+            return Response({'error': 'Could not fetch APK from release server.'}, status=status.HTTP_502_BAD_GATEWAY)
+
+        response = StreamingHttpResponse(
+            upstream.iter_content(chunk_size=8192),
+            content_type='application/vnd.android.package-archive',
+        )
+        response['Content-Disposition'] = f'attachment; filename="{APK_FILENAME}"'
+        content_length = upstream.headers.get('Content-Length')
+        if content_length:
+            response['Content-Length'] = content_length
+        return response
