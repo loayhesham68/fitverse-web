@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Bot, Send, Mic, Trash2, Wifi, WifiOff } from 'lucide-react'
+import { Bot, Send, Trash2, Wifi, WifiOff } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import Sidebar from '../components/Sidebar'
 import { getChatHistory, sendChatMessage, clearChat } from '../services/api'
@@ -268,9 +268,6 @@ export default function CoachPage() {
               style={{ maxHeight: '100px' }}
             />
             <div className="flex items-center gap-1.5 sm:gap-2">
-              <button className="w-8 h-8 rounded-xl hidden sm:flex items-center justify-center text-fitverse-muted hover:text-fitverse-accent transition-colors">
-                <Mic size={15} />
-              </button>
               <button onClick={() => sendMessage()} disabled={!input.trim() || sending}
                 className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center transition-all duration-200 disabled:opacity-40 active:scale-95 flex-shrink-0"
                 style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
