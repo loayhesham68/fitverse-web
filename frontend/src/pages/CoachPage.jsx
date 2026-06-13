@@ -15,25 +15,28 @@ const QUICK_PROMPTS = [
 function ChatBubble({ msg }) {
   const isUser = msg.role === 'user'
   const ts = msg.timestamp ? format(parseISO(msg.timestamp), 'HH:mm') : ''
+  // Strip basic markdown the model sometimes leaves in (the chat UI is plain text)
+  const content = (msg.content || '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/^\s*\*\s+/gm, '• ')
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3 sm:mb-4`}>
+    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} mb-3 sm:mb-4`}>
       {!isUser && (
         <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center mr-2 mt-1 flex-shrink-0"
           style={{ background: 'linear-gradient(135deg, #00897B, #26C6DA)' }}>
           <Bot size={12} color="white" />
         </div>
       )}
-      <div className="max-w-[85%] sm:max-w-[65%]">
-        <div className="px-3 sm:px-4 py-2 sm:py-3 rounded-2xl font-body text-sm leading-relaxed"
+      <div className="max-w-[85%] sm:max-w-[65%] min-w-0">
+        <div className="px-3 sm:px-4 py-2 sm:py-3 rounded-2xl font-body text-sm leading-relaxed whitespace-pre-wrap break-words"
           style={{
             background: isUser ? '#1E3538' : '#1A2E31',
             border: `1px solid ${isUser ? '#26C6DA22' : '#1E3538'}`,
             borderBottomRightRadius: isUser ? 4 : undefined,
             borderBottomLeftRadius: !isUser ? 4 : undefined,
             color: '#E8F4F5',
+            overflowWrap: 'anywhere',
           }}>
-          {msg.content}
+          {content}
         </div>
         <div className={`flex items-center gap-1.5 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
           <span className="font-mono text-[10px] sm:text-xs text-fitverse-muted">{isUser ? 'ATHLETE' : 'COACH'}</span>
@@ -163,7 +166,7 @@ export default function CoachPage() {
     <div className="min-h-screen flex" style={{ background: '#0F1C1E' }}>
       <Sidebar />
 
-      <main className="flex-1 sm:pl-16 pb-16 sm:pb-0 flex flex-col" style={{ height: '100dvh' }}>
+      <main className="flex-1 sm:pl-16 pb-16 sm:pb-0 flex flex-col min-w-0 w-full overflow-hidden" style={{ height: '100dvh' }}>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-3 sm:px-8 py-2.5 sm:py-4 border-b border-fitverse-card2 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -212,7 +215,7 @@ export default function CoachPage() {
         )}
 
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-8 py-3 sm:py-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-8 py-3 sm:py-6 w-full min-w-0">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-3">

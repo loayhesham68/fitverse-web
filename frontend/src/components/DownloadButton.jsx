@@ -13,7 +13,7 @@ export default function DownloadButton() {
 
   return (
     <div
-      className="fixed bottom-24 sm:bottom-8 right-6 z-50 flex flex-col items-end gap-2 transition-all duration-300"
+      className="fixed bottom-40 sm:bottom-8 right-4 sm:right-6 z-50 flex flex-col items-end gap-2 transition-all duration-300"
       style={{
         opacity: isTyping ? 0 : 1,
         pointerEvents: isTyping ? 'none' : 'auto',
@@ -57,14 +57,14 @@ export default function DownloadButton() {
       {/* Floating button */}
       <button
         onClick={() => setShowTooltip(!showTooltip)}
-        className="flex items-center gap-2 h-12 px-4 rounded-2xl shadow-2xl transition-all duration-200 active:scale-95 hover:scale-105"
+        className="flex items-center gap-1.5 sm:gap-2 h-10 sm:h-12 px-3 sm:px-4 rounded-2xl shadow-2xl transition-all duration-200 active:scale-95 hover:scale-105"
         style={{
           background: 'linear-gradient(135deg, #00897B, #26C6DA)',
           boxShadow: '0 0 24px #00897B55',
         }}
         title="Download FitVerse App">
-        <Smartphone size={18} color="white" />
-        <span className="font-body text-xs font-semibold tracking-wider text-white whitespace-nowrap">
+        <Smartphone size={16} color="white" className="sm:!w-[18px] sm:!h-[18px]" />
+        <span className="font-body text-[10px] sm:text-xs font-semibold tracking-wider text-white whitespace-nowrap">
           FOR MOBILE
         </span>
       </button>
