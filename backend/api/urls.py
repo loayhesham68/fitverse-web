@@ -21,7 +21,4 @@ urlpatterns = [
     path('chat/history/', views.ChatHistoryView.as_view(), name='chat-history'),
     path('chat/send/', views.ChatSendView.as_view(), name='chat-send'),
     path('chat/send-mobile/', views.MobileChatSyncView.as_view(), name='chat-send-mobile'),
-
-    # APK download proxy (avoids GitHub redirect/CORS on mobile & TV)
-    path('download-apk/', views.DownloadApkView.as_view(), name='download-apk'),
 ]
